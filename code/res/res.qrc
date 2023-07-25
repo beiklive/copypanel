@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/qss">
+        <file>Aqua.qss</file>
+        <file>zgf.qss</file>
+        <file>top.ico</file>
+    </qresource>
+</RCC>
