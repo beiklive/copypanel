@@ -78,16 +78,24 @@ void bodyWindow::onTableViewClicked(const QModelIndex &index)
 
 void bodyWindow::onTopCheckBoxToggled(bool checked)
 {
-    if (checked) {
-        // 将窗口设置为置顶
-        setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
-    } else {
-        // 取消窗口的置顶属性
-        setWindowFlags(windowFlags() & ~Qt::WindowStaysOnTopHint);
-    }
+    setWindowTopmost(this, checked);
+//    if (checked) {
+//        // 将窗口设置为置顶
+//        setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+//    } else {
+//        // 取消窗口的置顶属性
+//        setWindowFlags(windowFlags() & ~Qt::WindowStaysOnTopHint);
+//    }
 
-    // 重新设置窗口属性，使其生效
-    show();
+//    // 重新设置窗口属性，使其生效
+//    show();
+}
+
+void bodyWindow::setWindowTopmost(QWidget* widget, bool isTopmost)
+{
+    // Toggle topmost flag
+    SetWindowPos((HWND)widget->winId(), isTopmost ? HWND_TOPMOST : HWND_NOTOPMOST,
+                 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 }
 
 
