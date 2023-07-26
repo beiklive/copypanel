@@ -10,6 +10,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QFile>
+#include <windows.h>
 QT_BEGIN_NAMESPACE
 namespace Ui { class bodyWindow; }
 QT_END_NAMESPACE
@@ -26,6 +27,7 @@ public:
 private:
     void setupUI();
     void resizeEvent(QResizeEvent *event);
+    void setWindowTopmost(QWidget* widget, bool isTopmost);
 
     void saveDataToFile(const QString &fileName);
     void loadDataFromFile(const QString &fileName);
