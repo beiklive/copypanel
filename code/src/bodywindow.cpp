@@ -1,7 +1,6 @@
 ﻿#include "bodywindow.h"
 #include "ui_bodywindow.h"
-#include <QTextStream>
-#include <QStandardPaths>
+
 bodyWindow::bodyWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::bodyWindow)
@@ -54,94 +53,118 @@ void bodyWindow::setupUI()
 
 void bodyWindow::resizeEvent(QResizeEvent *event)
 {
-//    bodyWindow::resizeEvent(event);
-    // 更新表头视图的宽度为窗口的宽度
     tableView->horizontalHeader()->resizeSections(QHeaderView::Stretch);
-    tableView->setColumnWidth(1, width());
+    tableView->setColumnWidth(1, 2 * width());
 }
 
 void bodyWindow::onAddButtonClicked()
 {
     int row = model->rowCount();
     model->insertRow(row);
-    model->setData(model->index(row, 0), QApplication::clipboard()->text());
-    saveToFile();
+
+    const QClipboard *clipboard = QApplication::clipboard();
+    if (clipboard->mimeData()->hasImage()) {
+        // If clipboard has an image, set it to the cell
+        QImage image = clipboard->image();
+        // Save the image to a file in the desired directory
+        QString saveDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/copypinner/img";
+        QDir().mkpath(saveDir);
+
+        QString savePath = saveDir + "/image_" + QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz") + ".png";
+        image.save(savePath);
+
+        QPixmap pixmap(savePath);
+        if (!pixmap.isNull()) {
+            int width = 100;
+            int height = 100;
+            QPixmap scaledPixmap = pixmap.scaled(width, height, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            model->setData(model->index(row, 0), scaledPixmap, Qt::DecorationRole);
+        }
+        storage.add("image", savePath);
+        qDebug() << "image";
+    } else if (clipboard->mimeData()->hasText()) {
+        // If clipboard has text, set it to the cell
+        QString text = clipboard->text();
+        model->setData(model->index(row, 0), text);
+        storage.add("text", text);
+        qDebug() << "text";
+    }
 }
 
 void bodyWindow::onTableViewClicked(const QModelIndex &index)
 {
     if (index.isValid()) {
-        QString rowData = model->data(index, Qt::DisplayRole).toString();
-        QApplication::clipboard()->setText(rowData);
+        if( "text" == storage.getType(index.row())){
+            QApplication::clipboard()->setText(storage.getInfo(index.row()));
+            qDebug() << "Text saved to clipboard successfully!";
+        }
+        else if( "image" == storage.getType(index.row()))
+        {
+            bool result = saveImageToClipboard(storage.getInfo(index.row()));
+            if (result) {
+                qDebug() << "Image saved to clipboard successfully!";
+            } else {
+                qDebug() << "Failed to save image to clipboard.";
+            }
+        }
     }
+}
+
+bool bodyWindow::saveImageToClipboard(const QString& imagePath)
+{
+    QImage image(imagePath);
+    if (image.isNull()) {
+        return false;
+    }
+    QPixmap pixmap = QPixmap::fromImage(image);
+    if (pixmap.isNull()) {
+        return false;
+    }
+
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    clipboard->setPixmap(pixmap);
+    return true;
 }
 
 void bodyWindow::onTopCheckBoxToggled(bool checked)
 {
     setWindowTopmost(this, checked);
-//    if (checked) {
-//        // 将窗口设置为置顶
-//        setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
-//    } else {
-//        // 取消窗口的置顶属性
-//        setWindowFlags(windowFlags() & ~Qt::WindowStaysOnTopHint);
-//    }
-
-//    // 重新设置窗口属性，使其生效
-//    show();
 }
 
 void bodyWindow::setWindowTopmost(QWidget* widget, bool isTopmost)
 {
-    // Toggle topmost flag
     SetWindowPos((HWND)widget->winId(), isTopmost ? HWND_TOPMOST : HWND_NOTOPMOST,
                  0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 }
 
-
-void bodyWindow::saveToFile()
-{
-    saveDataToFile(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "data.txt");
-}
-
 void bodyWindow::loadFromFile()
 {
-    loadDataFromFile(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "data.txt");
+    loadDataFromFile();
 }
 
-void bodyWindow::saveDataToFile(const QString &fileName)
+
+void bodyWindow::loadDataFromFile()
 {
-    QFile file(fileName);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&file);
-        for (int row = 0; row < model->rowCount(); ++row) {
-            QString data = model->data(model->index(row, 0)).toString();
-            out << data << Qt::endl;
+    int dataSize = storage.size();
+    for (int i = 0; i < dataSize; ++i) {
+        QString info = storage.getInfo(i);
+        QString type = storage.getType(i);
+        int row = model->rowCount();
+        if("image" == type)
+        {
+            QPixmap pixmap(info);
+            if (!pixmap.isNull()) {
+                int width = 100;
+                int height = 100;
+                QPixmap scaledPixmap = pixmap.scaled(width, height, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                model->insertRow(row);
+                model->setData(model->index(row, 0), scaledPixmap, Qt::DecorationRole);
+            }
         }
-        file.close();
-    }
-}
-
-void bodyWindow::loadDataFromFile(const QString &fileName)
-{
-    QFile file(fileName);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&file);
-        QStringList dataList;
-        while (!in.atEnd()) {
-            dataList << in.readLine();
-        }
-        file.close();
-
-        int rowsToLoad = qMin(dataList.size(), 20);
-        int startRow = dataList.size() - rowsToLoad;
-
-        for (int i = startRow; i < dataList.size(); ++i) {
-            QString data = dataList.at(i);
-            int row = model->rowCount();
+        else if("text" == type)
+        {
             model->insertRow(row);
-            model->setData(model->index(row, 0), data);
-
+            model->setData(model->index(row, 0), info);
         }
     }
 }

@@ -29,10 +29,12 @@ win32  {
 
 SOURCES += \
     $$SRC_DIR/main.cpp \
-    $$SRC_DIR/bodywindow.cpp
+    $$SRC_DIR/bodywindow.cpp \
+    $$SRC_DIR/qtinformationstorage.cpp \
 
 HEADERS += \
-    $$INC_DIR/bodywindow.h
+    $$INC_DIR/bodywindow.h \
+    $$INC_DIR/qtinformationstorage.h  \
 
 FORMS += \
     $$MUI_DIR/bodywindow.ui

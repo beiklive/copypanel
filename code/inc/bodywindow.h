@@ -10,7 +10,17 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QFile>
+#include <QTextStream>
+#include <QStandardPaths>
 #include <windows.h>
+#include <QImage>
+#include <QByteArray>
+#include <QBuffer>
+#include <QMimeData>
+#include <QDebug>
+#include <QDir>
+#include "qtinformationstorage.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class bodyWindow; }
 QT_END_NAMESPACE
@@ -28,15 +38,14 @@ private:
     void setupUI();
     void resizeEvent(QResizeEvent *event);
     void setWindowTopmost(QWidget* widget, bool isTopmost);
-
-    void saveDataToFile(const QString &fileName);
-    void loadDataFromFile(const QString &fileName);
+    bool saveImageToClipboard(const QString& imagePath);
+    void loadDataFromFile();
 
 private slots:
     void onAddButtonClicked();
     void onTableViewClicked(const QModelIndex &index);
     void onTopCheckBoxToggled(bool checked);
-    void saveToFile();
+//    void saveToFile();
     void loadFromFile();
 
 private:
@@ -46,5 +55,10 @@ private:
     QStandardItemModel *model;
     QPushButton *addButton;
     QCheckBox *topCheckBox;
+
+    qint16 loadItemMax{50};
+    QString cacheFileName = "/copypinner/copypinner.cache";
+    QTInformationStorage storage;
+
 };
 #endif // BODYWINDOW_H
