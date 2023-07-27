@@ -14,6 +14,7 @@ public:
     QTInformationStorage();
     QTInformationStorage(const QString &filename, const QString &timestampFormat = "yyyy-MM-dd hh:mm:ss");
     void add(const QString &type, const QString &content);
+    void removeAt(int index);
     QString getInfo(int index) const;
     QString getType(int index) const;
     int size() const;

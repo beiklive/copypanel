@@ -43,6 +43,7 @@ private:
 
 private slots:
     void onAddButtonClicked();
+    void onDelButtonClicked();
     void onTableViewClicked(const QModelIndex &index);
     void onTopCheckBoxToggled(bool checked);
 //    void saveToFile();
@@ -54,11 +55,13 @@ private:
     QTableView *tableView;
     QStandardItemModel *model;
     QPushButton *addButton;
+    QPushButton *delButton;
     QCheckBox *topCheckBox;
 
     qint16 loadItemMax{50};
     QString cacheFileName = "/copypinner/copypinner.cache";
     QTInformationStorage storage;
 
+    int tableRowGlobal{-1};
 };
 #endif // BODYWINDOW_H

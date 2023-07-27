@@ -26,6 +26,7 @@ void bodyWindow::setupUI()
 {
     tableView = ui->tableView;
     addButton = ui->Add_btn;
+    delButton = ui->Del_btn;
     topCheckBox = ui->topcheckbox;
 
     this->setWindowTitle("PastePanel");
@@ -46,6 +47,7 @@ void bodyWindow::setupUI()
     tableView->setShowGrid(false);
     connect(tableView, &QTableView::clicked, this, &bodyWindow::onTableViewClicked);
     connect(addButton, &QPushButton::clicked, this, &bodyWindow::onAddButtonClicked);
+    connect(delButton, &QPushButton::clicked, this, &bodyWindow::onDelButtonClicked);
     connect(topCheckBox, &QCheckBox::toggled, this, &bodyWindow::onTopCheckBoxToggled);
 
 }
@@ -67,7 +69,7 @@ void bodyWindow::onAddButtonClicked()
         // If clipboard has an image, set it to the cell
         QImage image = clipboard->image();
         // Save the image to a file in the desired directory
-        QString saveDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/copypinner/img";
+        QString saveDir = QCoreApplication::applicationDirPath() + "/copypinner/img";
         QDir().mkpath(saveDir);
 
         QString savePath = saveDir + "/image_" + QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz") + ".png";
@@ -91,8 +93,20 @@ void bodyWindow::onAddButtonClicked()
     }
 }
 
+void bodyWindow::onDelButtonClicked()
+{
+    if( -1 != tableRowGlobal)
+    {
+        model->removeRow(tableRowGlobal);
+        storage.removeAt(tableRowGlobal);
+        tableRowGlobal = -1;
+    }
+}
+
 void bodyWindow::onTableViewClicked(const QModelIndex &index)
 {
+    tableRowGlobal = index.row();
+    qDebug() << "Select " << tableRowGlobal;
     if (index.isValid()) {
         if( "text" == storage.getType(index.row())){
             QApplication::clipboard()->setText(storage.getInfo(index.row()));
