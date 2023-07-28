@@ -40,7 +40,7 @@ void QTInformationStorage::removeAt(int index)
         file.resize(0);
         QTextStream out(&file);
         for (const QString& line : lines) {
-            out << line << "\n";
+            out << line << "##RowSuffix\n";
         }
 
         out.flush(); // Ensure that any pending writes are flushed to the file
