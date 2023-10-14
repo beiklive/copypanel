@@ -5,7 +5,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++17
 
 TEMPLATE = app
-TARGET = copypinner
+TARGET = copypanel
 
 SRC_DIR = code/src
 INC_DIR = code/inc
@@ -29,23 +29,27 @@ win32  {
 
 SOURCES += \
     $$SRC_DIR/main.cpp \
-    $$SRC_DIR/bodywindow.cpp \
+    $$SRC_DIR/desktopmenu.cpp \
     $$SRC_DIR/qtinformationstorage.cpp \
+    $$SRC_DIR//copypanel.cpp
 
 HEADERS += \
-    $$INC_DIR/bodywindow.h \
+    $$INC_DIR/desktopmenu.h \
     $$INC_DIR/qtinformationstorage.h  \
+    $$INC_DIR//copypanel.h
 
-FORMS += \
-    $$MUI_DIR/bodywindow.ui
+#FORMS += \
+#    $$MUI_DIR/bodywindow.ui
 
 RESOURCES += \
     $$RES_DIR/res.qrc
 
-RC_ICONS = code/res/top.ico
+RC_ICONS = code/res/ui/logo.ico
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES +=
 
