@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="code\src\copypanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\src\desktopmenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\src\qtinformationstorage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="code\inc\copypanel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="code\inc\desktopmenu.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="code\inc\qtinformationstorage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="build\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="code\res\Aqua.qss">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_add.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_add_hover.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_cancel.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_cancel_hover.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_checkbox_off.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_checkbox_on.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_confirm.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\btn_confirm_hover.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\logo.gif">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\ui\logo.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <QtRcc Include="code\res\res.qrc">
+      <Filter>Resource Files</Filter>
+    </QtRcc>
+    <None Include="code\res\ui\texture.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\top.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="code\res\zgf.qss">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="D:\MyCode\QT\copypinnner\copypinnner\copypanel_resource.rc" />
+  </ItemGroup>
+</Project>
