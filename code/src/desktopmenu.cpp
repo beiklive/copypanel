@@ -30,7 +30,7 @@ void DesktopMenu::OpenPanel()
         try {
             if(panel == nullptr)
             {
-                panel = new CopyPanel();
+                panel = new BasePanel();
             }
             PanelPosition();
             panel->show();

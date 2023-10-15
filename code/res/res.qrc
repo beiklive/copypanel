@@ -11,8 +11,10 @@
         <file>ui/btn_confirm_hover.png</file>
         <file>ui/logo.ico</file>
         <file>ui/logo.gif</file>
-        <file>ui/btn_add.png</file>
-        <file>ui/btn_add_hover.png</file>
         <file>ui/texture.png</file>
+        <file>ui/ark-pixel-12px.ttf</file>
+        <file>ui/btn_add.png</file>
+        <file>ui/btn_add_click.png</file>
+        <file>ui/btn_add_hover.png</file>
     </qresource>
 </RCC>

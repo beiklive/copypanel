@@ -31,15 +31,13 @@ SOURCES += \
     $$SRC_DIR/main.cpp \
     $$SRC_DIR/desktopmenu.cpp \
     $$SRC_DIR/qtinformationstorage.cpp \
-    $$SRC_DIR//copypanel.cpp
+    $$SRC_DIR/basepanel.cpp \
 
 HEADERS += \
     $$INC_DIR/desktopmenu.h \
     $$INC_DIR/qtinformationstorage.h  \
-    $$INC_DIR//copypanel.h
+    $$INC_DIR/basepanel.h \
 
-#FORMS += \
-#    $$MUI_DIR/bodywindow.ui
 
 RESOURCES += \
     $$RES_DIR/res.qrc

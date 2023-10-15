@@ -13,7 +13,7 @@
 #include <QMovie>
 #include <QScreen>
 #include <QApplication>
-#include "copypanel.h"
+#include "basepanel.h"
 class DesktopMenu : public QMainWindow
 {
     Q_OBJECT
@@ -48,7 +48,7 @@ private:
     QSystemTrayIcon *trayIcon;
     QLabel *label{nullptr};
     QMovie *movie{nullptr};
-    CopyPanel *panel{nullptr};
+    BasePanel *panel{nullptr};
     void createSystemTrayIcon();
 
     void showSettings();
