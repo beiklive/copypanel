@@ -133,10 +133,10 @@ bool DesktopMenu::eventFilter(QObject *obj, QEvent *event)
 void DesktopMenu::showContextMenu(const QPoint &pos)
 {
     QMenu contextMenu(this);
-    QAction *settingsAction = contextMenu.addAction("设置");
+//    QAction *settingsAction = contextMenu.addAction("设置");
     QAction *quitAction = contextMenu.addAction("退出");
 
-    connect(settingsAction, &QAction::triggered, this, &DesktopMenu::showSettings);
+//    connect(settingsAction, &QAction::triggered, this, &DesktopMenu::showSettings);
     connect(quitAction, &QAction::triggered, this, &DesktopMenu::closeProgram);
     contextMenu.exec(mapToGlobal(pos));
 }
@@ -158,10 +158,10 @@ void DesktopMenu::createSystemTrayIcon()
 
     // 创建右键菜单
     QMenu *trayMenu = new QMenu(this);
-    QAction *settingsAction = trayMenu->addAction("设置");
+//    QAction *settingsAction = trayMenu->addAction("设置");
     QAction *quitAction = trayMenu->addAction("退出");
 
-    connect(settingsAction, &QAction::triggered, this, &DesktopMenu::showSettings);
+//    connect(settingsAction, &QAction::triggered, this, &DesktopMenu::showSettings);
     connect(quitAction, &QAction::triggered, this, &DesktopMenu::closeProgram);
 
     trayIcon->setContextMenu(trayMenu);

@@ -11,7 +11,16 @@ BasePanel::BasePanel(QWidget *parent)
     setFixedSize(tilePixel * PanelWidth, tilePixel * PanelHeight);
     tiles = loadTileset(":/qss/ui/texture.png");
 
+    // 检查字体是否可用
+    fontId = QFontDatabase::addApplicationFont(":/qss/ui/ark-pixel-12px.ttf");
+    if (fontId != -1) {
+        fontName = QFontDatabase::applicationFontFamilies(fontId).at(0);
+    }
+    QObject::connect(this, &BasePanel::itemDeleteSignal, this, &BasePanel::itemDeleteSlot);
+
     PixmapItemSet();
+//    createCopyItem();
+
 }
 
 BasePanel::~BasePanel()
@@ -234,14 +243,9 @@ PixmapItem_t *BasePanel::createPixmapItemByText(QString itemName, QPoint resPos,
     QPainter painter(&pixmap);
 
 
-    // 检查字体是否可用
-    int fontId = QFontDatabase::addApplicationFont(":/qss/ui/ark-pixel-12px.ttf");
-    if (fontId != -1) {
-        fontName = QFontDatabase::applicationFontFamilies(fontId).at(0);
-    }
+
 
     QFont font(fontName, 10, QFont::Thin); // 这里使用 Arial 字体，大小为 12，粗体
-    //QFont font(":/qss/ui/ark-pixel-12px.ttf", 12, QFont::Bold);
     painter.setFont(font);
     painter.setPen(QColor(0, 0, 0)); // 黑色
     for(int i = 0; i < resText.length(); i++)
@@ -249,8 +253,7 @@ PixmapItem_t *BasePanel::createPixmapItemByText(QString itemName, QPoint resPos,
         painter.drawText(tilePixel * i, 0, tilePixel, tilePixel, Qt::AlignCenter, resText[i]);
     }
     tempItem->res = pixmap;
-    // 卸载应用程序添加的所有字体, 减少内存占用
-    QFontDatabase::removeAllApplicationFonts();
+
 
 
     return tempItem;
@@ -293,6 +296,21 @@ void BasePanel::PixmapItemSet()
     addBtn->MouseClick = [&](PixmapItem_t *item) {
         qDebug() << "MouseClick " << item->id << " == " << isMousePressed;
         setPixmapSkin(item, isMousePressed ? ClickSkin : HoverSkin);
+        if(isMousePressed){
+
+        }else{
+            // 鼠标抬起
+            int index = copyItems.length();
+            const QString boardtext = getTextFromClipboard();
+            CompositePixmapItem_t *copyitem = createCompositeItem("index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel)), boardtext);
+
+            addItemToTrack(copyitem->btn);
+            addItemToTrack(copyitem->text);
+
+            copyItems.append(copyitem);
+        }
+
+
     };
     addBtn->Update = [&](PixmapItem_t *item){
         item->pos.setX(1*tilePixel);
@@ -314,6 +332,12 @@ void BasePanel::PixmapItemSet()
     CheckBox->MouseClick = [&](PixmapItem_t *item) {
         qDebug() << "MouseClick " << item->id << " == " << isMousePressed;
         setPixmapSkin(item, isMousePressed ? ClickSkin : HoverSkin);
+
+        if(isMousePressed){
+
+        }else{
+
+        }
     };
     CheckBox->Update = [&](PixmapItem_t *item){
         item->pos.setX(this->width() - tilePixel*3);
@@ -335,6 +359,11 @@ void BasePanel::PixmapItemSet()
     };
     CheckBoxLabel->MouseClick = [&](PixmapItem_t *item) {
         qDebug() << "MouseClick " << item->id;
+        if(isMousePressed){
+
+        }else{
+
+        }
     };
     addItemToTrack(CheckBoxLabel);
     //=====================================================================
@@ -367,6 +396,7 @@ void BasePanel::setPixmapSkin(PixmapItem_t *item, int skinflag)
 void BasePanel::setPixmapItem(QPainter &painter, PixmapItem_t *item)
 {
     painter.drawPixmap(item->pos.x(), item->pos.y(), item->res);
+    qDebug() << item->id << "  " << item->parentId << "  Pos : " << item->pos;
 }
 
 void BasePanel::itemsUpdate()
@@ -453,4 +483,195 @@ void BasePanel::itemClickEvent()
             break;
         }
     }
+}
+
+void BasePanel::createCopyItem()
+{
+    int itemStartY = tilePixel + PanelSplitY;
+    int itemStartX = tilePixel;
+    for(int i=0; i < 15; i++)
+    {
+        CompositePixmapItem_t *copyitem = createCompositeItem("index"+QString::number(i), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (i)*(tilePixel + 0.25*tilePixel)), "测试文字测试文字测试文字测试文字测试文字测试文字测试文字");
+
+        addItemToTrack(copyitem->btn);
+        addItemToTrack(copyitem->text);
+
+        copyItems.append(copyitem);
+    }
+
+
+
+}
+
+CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint resPos, QString text)
+{
+    CompositePixmapItem_t *tempItem = new CompositePixmapItem_t();
+    tempItem->id = itemName;
+    tempItem->pos.setX(resPos.x());
+    tempItem->pos.setY(resPos.y());
+    //========== btn ============
+    PixmapItem_t *addBtn = createPixmapItemByUrl(tempItem->id +"DELETE_BTN",QPoint(tempItem->pos.x() + 0*tilePixel, tempItem->pos.y() + 0*tilePixel), ":/qss/ui/btn_add.png", ":/qss/ui/btn_add_hover.png", ":/qss/ui/btn_add_click.png");
+    addBtn->parentId = tempItem->id;
+    addBtn->MouseMoveIn = [&](PixmapItem_t *item) {
+        qDebug() << "MouseMoveIn " << item->id;
+        setPixmapSkin(item, HoverSkin);
+    };
+    addBtn->MouseMoveOut = [&](PixmapItem_t *item) {
+        qDebug() << "MouseMoveOut " << item->id;
+        setPixmapSkin(item, NormalSkin);
+    };
+    addBtn->MouseClick = [&](PixmapItem_t *item) {
+        qDebug() << "MouseClick " << item->id << " == " << isMousePressed;
+        setPixmapSkin(item, isMousePressed ? ClickSkin : HoverSkin);
+        if(isMousePressed){
+
+        }else{
+            emit itemDeleteSignal(item->parentId);
+        }
+    };
+    addBtn->Update = [&](PixmapItem_t *item){
+        item->pos.setX(getCopyItemById(item->parentId)->pos.x() + 0*tilePixel);
+        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0*tilePixel);
+    };
+    tempItem->btn = addBtn;
+    //========== text ===========
+    PixmapItem_t *BoxLabel = createPixmapItemByText(tempItem->id + "BOXLABEL", QPoint(tempItem->pos.x() + tilePixel * 2, tempItem->pos.y() + 0 * tilePixel), text);
+    BoxLabel->parentId = tempItem->id;
+    BoxLabel->text = text;
+    BoxLabel->MouseMoveIn = [&](PixmapItem_t *item) {
+        qDebug() << "MouseMoveIn " << item->id;
+    };
+    BoxLabel->MouseMoveOut = [&](PixmapItem_t *item) {
+        qDebug() << "MouseMoveOut " << item->id;
+    };
+    BoxLabel->Update = [&](PixmapItem_t *item){
+        item->pos.setX(getCopyItemById(item->parentId)->pos.x() + tilePixel * 2);
+        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0 * tilePixel);
+    };
+    BoxLabel->MouseClick = [&](PixmapItem_t *item) {
+        qDebug() << "MouseClick " << item->id;
+        if(isMousePressed){
+
+        }else{
+            QApplication::clipboard()->setText(item->text);
+        }
+    };
+    tempItem->text = BoxLabel;
+
+    return tempItem;
+}
+
+CompositePixmapItem_t* BasePanel::getCopyItemById(QString id)
+{
+    for (CompositePixmapItem_t* tempItem : copyItems) {
+        if (tempItem->id == id) {
+            return tempItem;
+        }
+    }
+    return nullptr;
+}
+
+void BasePanel::deleteCopyItemByID(QString id)
+{
+    CompositePixmapItem_t* tmpItem{nullptr};
+    for (CompositePixmapItem_t* tempItem : copyItems) {
+        if (tempItem->id == id) {
+            qDebug() << "find : " << tempItem;
+            tmpItem = tempItem;
+            break;
+        }
+    }
+    if(nullptr != tmpItem)
+    {
+        removePixmapItemById(tmpItem->btn->id);
+        removePixmapItemById(tmpItem->text->id);
+        removeCompositeItemById(tmpItem->id);
+        isMouseMoveIn = false;
+        copyitemIndex = 0;
+        reArrangeCopyItems();
+    }
+
+
+}
+
+void BasePanel::removeCompositeItemById(const QString &id) {
+    int index = -1;
+    for (int i = 0; i < copyItems.size(); ++i) {
+        if (copyItems[i]->id == id) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index >= 0) {
+        delete copyItems[index];
+        copyItems.remove(index);
+    }
+}
+
+void BasePanel::removePixmapItemById(const QString &id) {
+    int index = -1;
+    for (int i = 0; i < pixmapItems.size(); ++i) {
+        if (pixmapItems[i]->id == id) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index >= 0) {
+        delete pixmapItems[index];
+        pixmapItems.remove(index);
+    }
+}
+
+void BasePanel::reArrangeCopyItems()
+{
+    int ItemsLength = copyItems.length();
+
+    for(int i = 0; i < ItemsLength; i++)
+    {
+        int index = i;
+//"index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel))
+        copyItems[i]->id = "index"+QString::number(index);
+        copyItems[i]->pos.setX(itemStartX + (0.5)*tilePixel);
+        copyItems[i]->pos.setY(itemStartY + (index)*(tilePixel + 0.25*tilePixel));
+        copyItems[i]->btn->parentId = copyItems[i]->id;
+        copyItems[i]->btn->id = copyItems[i]->id + "DELETE_BTN";
+        copyItems[i]->text->parentId = copyItems[i]->id;
+        copyItems[i]->text->id = copyItems[i]->id + "BOXLABEL";
+    }
+}
+
+const QString BasePanel::getTextFromClipboard()
+{
+    const QClipboard *clipboard = QApplication::clipboard();
+    if (clipboard->mimeData()->hasImage()) {
+//        // If clipboard has an image, set it to the cell
+//        QImage image = clipboard->image();
+//        // Save the image to a file in the desired directory
+//        QString saveDir = QCoreApplication::applicationDirPath() + "/copypinner/img";
+//        QDir().mkpath(saveDir);
+
+//        QString savePath = saveDir + "/image_" + QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz") + ".png";
+//        image.save(savePath);
+
+//        QPixmap pixmap(savePath);
+//        if (!pixmap.isNull()) {
+//            int width = 100;
+//            int height = 100;
+//            QPixmap scaledPixmap = pixmap.scaled(width, height, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+//            model->setData(model->index(row, 0), scaledPixmap, Qt::DecorationRole);
+//        }
+//        storage.add("image", savePath);
+//        qDebug() << "image";
+    } else if (clipboard->mimeData()->hasText()) {
+        // If clipboard has text, set it to the cell
+        QString text = clipboard->text();
+        return text;
+    }
+}
+
+void BasePanel::itemDeleteSlot(const QString &text) {
+    qDebug() << "itemDeleteSlot";
+    deleteCopyItemByID(text);
 }

@@ -12,6 +12,9 @@
 #include <functional> // 包含 <functional> 头文件
 #include <QFont>
 #include <QFontDatabase>
+#include <QClipboard>
+#include <QApplication>
+#include <QMimeData>
 enum TilesetIndex{
     TileTopLeft,
     TileTopCenter,
@@ -34,7 +37,8 @@ typedef struct PixmapItem {
     QPoint pos;
     QPixmap res;
     QString id;
-
+    QString parentId{"NULL"};
+    QString text;
     QString resUrl;
     QString hoverResUrl;
     QString clickResUrl;
@@ -48,6 +52,15 @@ typedef struct PixmapItem {
     std::function<void(PixmapItem*)> Update;
 
 } PixmapItem_t;
+
+typedef struct CompositePixmapItem {
+    QPoint pos;
+    QString id;
+    PixmapItem_t *btn;
+    PixmapItem_t *text;
+}CompositePixmapItem_t;
+
+
 
 class BasePanel : public QWidget
 {
@@ -97,23 +110,53 @@ protected:
     void itemMoveOutEvent(PixmapItem_t *item);
     void itemClickEvent();
 
+
+    // 复合pixItem
+    void createCopyItem();
+    CompositePixmapItem_t* createCompositeItem(QString itemName, QPoint resPos, QString text);
+
+    CompositePixmapItem_t* getCopyItemById(QString id);
+    void deleteCopyItemByID(QString id);
+    // 函数用于查找并删除 CompositePixmapItem 元素
+    void removeCompositeItemById(const QString& id);
+    // 函数用于查找并删除 PixmapItem 元素
+    void removePixmapItemById(const QString& id);
+    void reArrangeCopyItems();
+
+
+
+    // 剪切板功能
+    const QString getTextFromClipboard();
+
 private:
     QString fontName{"黑体"};
     QString itemID{"NULL"};
+    int fontId{-1};
+    int copyitemIndex{0};
+
     QVector<QPixmap*> tiles{nullptr};
     QVector<PixmapItem_t*> pixmapItems;
+    QVector<CompositePixmapItem_t*> copyItems;
+
+    QVector<PixmapItem_t*> pixmapItemsTrash;
+    QVector<CompositePixmapItem_t*> copyItemsTrash;
 
     const int PanelWidth{17};
     const int PanelHeight{30};
     const int tilePixel{16};
     const int PanelSplitY{16*3};
+    int itemStartY = tilePixel + PanelSplitY;
+    int itemStartX = tilePixel;
 
     int dragX{0};
     int dragY{0};
     bool isDrag{false};
     bool initdown{true};
 signals:
-
+    void itemDeleteSignal(const QString& text);
+public slots:
+    // 自定义槽函数，带有一个 QString 参数
+    void itemDeleteSlot(const QString& text);
 };
 
 
