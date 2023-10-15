@@ -29,7 +29,7 @@ jobs:
             msvc_arch: x64
             qt_arch_install: msvc2019_64
     env:
-      targetName: copypinner.exe
+      targetName: copypanel.exe
     # 步骤
     steps:
       # 安装Qt
@@ -66,7 +66,7 @@ jobs:
       - name: Package
         id: package
         env:
-          archiveName: copypinner_windows_${{ matrix.msvc_arch }}
+          archiveName: copypanel_windows_${{ matrix.msvc_arch }}
           msvcArch: ${{ matrix.msvc_arch }}
         shell: pwsh
         run: |
