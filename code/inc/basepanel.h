@@ -15,6 +15,8 @@
 #include <QClipboard>
 #include <QApplication>
 #include <QMimeData>
+#include <QMap>
+#include <QStringList>
 enum TilesetIndex{
     TileTopLeft,
     TileTopCenter,
@@ -30,7 +32,8 @@ enum TilesetIndex{
 enum PixmapItemSkin{
     NormalSkin,
     ClickSkin,
-    HoverSkin
+    HoverSkin,
+    TempSkin
 };
 
 typedef struct PixmapItem {
@@ -42,6 +45,7 @@ typedef struct PixmapItem {
     QString resUrl;
     QString hoverResUrl;
     QString clickResUrl;
+    QString TempResUrl{"NULL"};
     // MouseMoveIn Lambda函数
     std::function<void(PixmapItem*)> MouseMoveIn;
     // MouseMoveOut Lambda函数
@@ -60,8 +64,6 @@ typedef struct CompositePixmapItem {
     PixmapItem_t *text;
 }CompositePixmapItem_t;
 
-
-
 class BasePanel : public QWidget
 {
     Q_OBJECT
@@ -70,7 +72,7 @@ public:
     ~BasePanel();
 
     QVector<QPixmap*> loadTileset(const QString &imagePath);
-
+    bool isChineseOrEnglishCharacter(const QChar& character);
 protected:
     void drawPixmapPanel();
     void drawPanelBorder(QPainter &painter);
@@ -92,11 +94,14 @@ protected:
     bool isOverEdge(QPoint& t_point);
     void DrawTailMapBorder(QPainter &painter, QPoint item_pos, QSize item_size);
 
+    // pixmap皮肤初始化
+    void pixmapSkinInit();
 
     // pixitem相关
-    PixmapItem_t* createPixmapItemByUrl(QString itemName, QPoint resPos, QString resUrl, QString reshoverUrl, QString resclickUrl);
-    PixmapItem_t* createPixmapItemByText(QString itemName, QPoint resPos, QString resText);
+    PixmapItem_t* createPixmapItemByUrl(QString itemName, QPoint resPos, QString resUrl, QString reshoverUrl, QString resclickUrl, QString resTempUrl="NULL");
+    PixmapItem_t* createPixmapItemByText(QString itemName, QPoint resPos, QString resText, int fontSize=16);
     PixmapItem_t* createPixmapItemByPixmap(QString itemName, QPoint resPos);
+    void reDrawTextPixmap(PixmapItem_t *item, const QColor &fillColor, const QString& resText);
 
     void PixmapItemSet();
     void setPixmapSkin(PixmapItem_t* item, int skinflag);
@@ -129,6 +134,9 @@ protected:
     const QString getTextFromClipboard();
 
 private:
+    QMap<QString, QStringList> btnSkinDict;
+
+
     QString fontName{"黑体"};
     QString itemID{"NULL"};
     int fontId{-1};
@@ -145,6 +153,8 @@ private:
     const int PanelHeight{30};
     const int tilePixel{16};
     const int PanelSplitY{16*3};
+    const int zhPixel = 14;
+    const int enPixel = 8;
     int itemStartY = tilePixel + PanelSplitY;
     int itemStartX = tilePixel;
 

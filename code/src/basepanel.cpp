@@ -1,4 +1,4 @@
-#include "basepanel.h"
+﻿#include "basepanel.h"
 
 BasePanel::BasePanel(QWidget *parent)
     : QWidget{parent}
@@ -10,7 +10,7 @@ BasePanel::BasePanel(QWidget *parent)
 
     setFixedSize(tilePixel * PanelWidth, tilePixel * PanelHeight);
     tiles = loadTileset(":/qss/ui/texture.png");
-
+    pixmapSkinInit();
     // 检查字体是否可用
     fontId = QFontDatabase::addApplicationFont(":/qss/ui/ark-pixel-12px.ttf");
     if (fontId != -1) {
@@ -52,6 +52,16 @@ QVector<QPixmap*> BasePanel::loadTileset(const QString &imagePath)
         }
     }
     return tileset;
+}
+
+bool BasePanel::isChineseOrEnglishCharacter(const QChar &character) {
+    ushort unicode = character.unicode();
+
+    if ((unicode >= 0x0020 && unicode <= 0x007E)) {
+        return false; // 是英文字符或标点符号
+    } else {
+        return true; // 不是英文字符或标点符号
+    }
 }
 
 void BasePanel::drawPixmapPanel()
@@ -119,6 +129,7 @@ void BasePanel::mousePressEvent(QMouseEvent *event)
         {
             itemClickEvent();
         }
+        itemTracking(event);
     }
 }
 
@@ -156,6 +167,7 @@ void BasePanel::mouseReleaseEvent(QMouseEvent *event)
                 itemClickEvent();
             }
         }
+        itemTracking(event);
     }
 }
 
@@ -216,13 +228,22 @@ void BasePanel::DrawTailMapBorder(QPainter &painter, QPoint item_pos, QSize item
 
 }
 
-PixmapItem_t *BasePanel::createPixmapItemByUrl(QString itemName, QPoint resPos, QString resUrl, QString reshoverUrl, QString resclickUrl)
+void BasePanel::pixmapSkinInit()
+{
+    btnSkinDict["DEFAULT"] = {":/qss/ui/arrow.png", ":/qss/ui/arrow.png", ":/qss/ui/arrow.png"};
+    btnSkinDict["ADD"] = {":/qss/ui/btn_add.png", ":/qss/ui/btn_add_hover.png", ":/qss/ui/btn_add_click.png"};
+    btnSkinDict["DELETE"] = {":/qss/ui/btn_delete.png", ":/qss/ui/btn_delete_hover.png", ":/qss/ui/btn_delete_click.png"};
+    btnSkinDict["CHECKBOX"] = {":/qss/ui/btn_checkbox_off.png", ":/qss/ui/btn_checkbox_on.png",":/qss/ui/btn_checkbox_off.png"};
+}
+
+PixmapItem_t *BasePanel::createPixmapItemByUrl(QString itemName, QPoint resPos, QString resUrl, QString reshoverUrl, QString resclickUrl, QString resTempUrl)
 {
     PixmapItem_t *tempItem = new PixmapItem_t();
     tempItem->id = itemName;
     tempItem->resUrl = resUrl;
     tempItem->hoverResUrl = reshoverUrl;
     tempItem->clickResUrl = resclickUrl;
+    tempItem->TempResUrl  = resTempUrl;
     tempItem->pos.setX(resPos.x());
     tempItem->pos.setY(resPos.y());
     setPixmapSkin(tempItem, NormalSkin);
@@ -230,7 +251,9 @@ PixmapItem_t *BasePanel::createPixmapItemByUrl(QString itemName, QPoint resPos, 
     return tempItem;
 }
 
-PixmapItem_t *BasePanel::createPixmapItemByText(QString itemName, QPoint resPos, QString resText)
+
+
+PixmapItem_t *BasePanel::createPixmapItemByText(QString itemName, QPoint resPos, QString resText, int fontSize)
 {
     PixmapItem_t *tempItem = new PixmapItem_t();
     tempItem->id = itemName;
@@ -238,21 +261,8 @@ PixmapItem_t *BasePanel::createPixmapItemByText(QString itemName, QPoint resPos,
     tempItem->pos.setY(resPos.y());
 
 
-    QPixmap pixmap(tilePixel * resText.length(), tilePixel);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
+    reDrawTextPixmap(tempItem, Qt::transparent, resText);
 
-
-
-
-    QFont font(fontName, 10, QFont::Thin); // 这里使用 Arial 字体，大小为 12，粗体
-    painter.setFont(font);
-    painter.setPen(QColor(0, 0, 0)); // 黑色
-    for(int i = 0; i < resText.length(); i++)
-    {
-        painter.drawText(tilePixel * i, 0, tilePixel, tilePixel, Qt::AlignCenter, resText[i]);
-    }
-    tempItem->res = pixmap;
 
 
 
@@ -281,10 +291,35 @@ PixmapItem_t *BasePanel::createPixmapItemByPixmap(QString itemName, QPoint resPo
     return tempItem;
 }
 
+void BasePanel::reDrawTextPixmap(PixmapItem_t *item, const QColor &fillColor, const QString &resText)
+{
+    QPixmap pixmap(tilePixel * resText.length(), tilePixel);
+    pixmap.fill(fillColor);
+    QPainter painter(&pixmap);
+
+    QFont font(fontName, 10, QFont::Thin);
+    painter.setFont(font);
+    painter.setPen(QColor(0, 0, 0));
+    int posNum = 0;
+
+    int prePixel{0};
+    int curPixel{0};
+    for(int i = 0; i < resText.length(); i++)
+    {
+        QChar character = resText[i];
+        bool isChinese = isChineseOrEnglishCharacter(character);
+        curPixel = (isChinese?zhPixel:enPixel);
+        posNum += prePixel;
+        prePixel = curPixel;
+        painter.drawText(posNum, 0, curPixel, 16, Qt::AlignCenter, resText[i]);
+    }
+    item->res = pixmap;
+}
+
 void BasePanel::PixmapItemSet()
 {
 
-    PixmapItem_t *addBtn = createPixmapItemByUrl("ADD_BTN",QPoint(1*tilePixel, 1*tilePixel), ":/qss/ui/btn_add.png", ":/qss/ui/btn_add_hover.png", ":/qss/ui/btn_add_click.png");
+    PixmapItem_t *addBtn = createPixmapItemByUrl("ADD_BTN",QPoint(1*tilePixel, 1*tilePixel), btnSkinDict["ADD"][0], btnSkinDict["ADD"][1], btnSkinDict["ADD"][2]);
     addBtn->MouseMoveIn = [&](PixmapItem_t *item) {
         qDebug() << "MouseMoveIn " << item->id;
         setPixmapSkin(item, HoverSkin);
@@ -321,7 +356,7 @@ void BasePanel::PixmapItemSet()
 
     addItemToTrack(addBtn);
     //====================================================================
-    PixmapItem_t *CheckBox = createPixmapItemByUrl("CHECKBOX",QPoint(this->width() - tilePixel*3, 1*tilePixel), ":/qss/ui/btn_checkbox_off.png", ":/qss/ui/btn_checkbox_on.png",":/qss/ui/btn_checkbox_off.png");
+    PixmapItem_t *CheckBox = createPixmapItemByUrl("CHECKBOX",QPoint(this->width() - tilePixel*3, 1*tilePixel), btnSkinDict["CHECKBOX"][0], btnSkinDict["CHECKBOX"][1],btnSkinDict["CHECKBOX"][2]);
     CheckBox->MouseMoveIn = [&](PixmapItem_t *item) {
         qDebug() << "MouseMoveIn " << item->id;
         setPixmapSkin(item, HoverSkin);
@@ -385,10 +420,14 @@ void BasePanel::setPixmapSkin(PixmapItem_t *item, int skinflag)
     case HoverSkin:
         skinUrl = item->hoverResUrl;
         break;
+    case TempSkin:
+        skinUrl = item->TempResUrl;
+        break;
     default:
         skinUrl = item->resUrl;
         break;
     }
+    qDebug() << item->id << " : " << skinUrl;
     QPixmap icon(skinUrl);
     icon.setMask(icon.createHeuristicMask());  // 设置透明掩码
     item->res = icon;
@@ -398,7 +437,7 @@ void BasePanel::setPixmapSkin(PixmapItem_t *item, int skinflag)
 void BasePanel::setPixmapItem(QPainter &painter, PixmapItem_t *item)
 {
     painter.drawPixmap(item->pos.x(), item->pos.y(), item->res);
-    qDebug() << item->id << "  " << item->parentId << "  Pos : " << item->pos;
+//    qDebug() << item->id << "  " << item->parentId << "  Pos : " << item->pos;
 }
 
 void BasePanel::itemsUpdate()
@@ -512,7 +551,7 @@ CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint r
     tempItem->pos.setX(resPos.x());
     tempItem->pos.setY(resPos.y());
     //========== btn ============
-    PixmapItem_t *addBtn = createPixmapItemByUrl(tempItem->id +"DELETE_BTN",QPoint(tempItem->pos.x() + 0*tilePixel, tempItem->pos.y() + 0*tilePixel), ":/qss/ui/btn_add.png", ":/qss/ui/btn_add_hover.png", ":/qss/ui/btn_add_click.png");
+    PixmapItem_t *addBtn = createPixmapItemByUrl(tempItem->id +"DELETE_BTN",QPoint(tempItem->pos.x() + 0*tilePixel, tempItem->pos.y() + 0*tilePixel), btnSkinDict["DELETE"][0], btnSkinDict["DELETE"][1], btnSkinDict["DELETE"][2], btnSkinDict["DEFAULT"][0]);
     addBtn->parentId = tempItem->id;
     addBtn->MouseMoveIn = [&](PixmapItem_t *item) {
         qDebug() << "MouseMoveIn " << item->id;
@@ -542,9 +581,15 @@ CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint r
     BoxLabel->text = text;
     BoxLabel->MouseMoveIn = [&](PixmapItem_t *item) {
         qDebug() << "MouseMoveIn " << item->id;
+
+        reDrawTextPixmap(item, Qt::gray, item->text);
+        setPixmapSkin(getCopyItemById(item->parentId)->btn, TempSkin);
     };
     BoxLabel->MouseMoveOut = [&](PixmapItem_t *item) {
         qDebug() << "MouseMoveOut " << item->id;
+
+        reDrawTextPixmap(item, Qt::transparent, item->text);
+        setPixmapSkin(getCopyItemById(item->parentId)->btn, NormalSkin);
     };
     BoxLabel->Update = [&](PixmapItem_t *item){
         item->pos.setX(getCopyItemById(item->parentId)->pos.x() + tilePixel * 2);
@@ -578,7 +623,7 @@ void BasePanel::deleteCopyItemByID(QString id)
     CompositePixmapItem_t* tmpItem{nullptr};
     for (CompositePixmapItem_t* tempItem : copyItems) {
         if (tempItem->id == id) {
-            qDebug() << "find : " << tempItem;
+            qDebug() << "find : " << tempItem->id;
             tmpItem = tempItem;
             break;
         }
@@ -632,11 +677,9 @@ void BasePanel::reArrangeCopyItems()
 
     for(int i = 0; i < ItemsLength; i++)
     {
-        int index = i;
-//"index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel))
-        copyItems[i]->id = "index"+QString::number(index);
+        copyItems[i]->id = "index"+QString::number(i);
         copyItems[i]->pos.setX(itemStartX + (0.5)*tilePixel);
-        copyItems[i]->pos.setY(itemStartY + (index)*(tilePixel + 0.25*tilePixel));
+        copyItems[i]->pos.setY(itemStartY + (i)*(tilePixel + 0.25*tilePixel));
         copyItems[i]->btn->parentId = copyItems[i]->id;
         copyItems[i]->btn->id = copyItems[i]->id + "DELETE_BTN";
         copyItems[i]->text->parentId = copyItems[i]->id;
@@ -668,6 +711,7 @@ const QString BasePanel::getTextFromClipboard()
 //        }
 //        storage.add("image", savePath);
 //        qDebug() << "image";
+        return "";
     } else if (clipboard->mimeData()->hasText()) {
         // If clipboard has text, set it to the cell
         QString text = clipboard->text();

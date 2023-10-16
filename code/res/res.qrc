@@ -16,5 +16,9 @@
         <file>ui/btn_add.png</file>
         <file>ui/btn_add_click.png</file>
         <file>ui/btn_add_hover.png</file>
+        <file>ui/arrow.png</file>
+        <file>ui/btn_delete.png</file>
+        <file>ui/btn_delete_click.png</file>
+        <file>ui/btn_delete_hover.png</file>
     </qresource>
 </RCC>
