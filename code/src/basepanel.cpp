@@ -1,4 +1,4 @@
-﻿#include "basepanel.h"
+#include "basepanel.h"
 
 BasePanel::BasePanel(QWidget *parent)
     : QWidget{parent}
@@ -302,12 +302,14 @@ void BasePanel::PixmapItemSet()
             // 鼠标抬起
             int index = copyItems.length();
             const QString boardtext = getTextFromClipboard();
-            CompositePixmapItem_t *copyitem = createCompositeItem("index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel)), boardtext);
+            if(boardtext != ""){
+                CompositePixmapItem_t *copyitem = createCompositeItem("index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel)), boardtext);
 
-            addItemToTrack(copyitem->btn);
-            addItemToTrack(copyitem->text);
+                addItemToTrack(copyitem->btn);
+                addItemToTrack(copyitem->text);
 
-            copyItems.append(copyitem);
+                copyItems.append(copyitem);
+            }
         }
 
 
@@ -640,6 +642,8 @@ void BasePanel::reArrangeCopyItems()
         copyItems[i]->text->parentId = copyItems[i]->id;
         copyItems[i]->text->id = copyItems[i]->id + "BOXLABEL";
     }
+
+
 }
 
 const QString BasePanel::getTextFromClipboard()
@@ -668,7 +672,10 @@ const QString BasePanel::getTextFromClipboard()
         // If clipboard has text, set it to the cell
         QString text = clipboard->text();
         return text;
+    }else{
+        return "";
     }
+
 }
 
 void BasePanel::itemDeleteSlot(const QString &text) {
