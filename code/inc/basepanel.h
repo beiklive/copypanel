@@ -57,6 +57,25 @@ typedef struct PixmapItem {
 
 } PixmapItem_t;
 
+#define ITEM_EVENT_END(pixmap_item) };
+#define ITEM_EVENT_MOVEIN(pixmap_item) \
+    pixmap_item->MouseMoveIn = [&](PixmapItem_t *item) { \
+        qDebug() << "MouseMoveIn " << item->id; \
+
+
+#define ITEM_EVENT_MOVEOUT(pixmap_item) \
+    pixmap_item->MouseMoveOut = [&](PixmapItem_t *item) { \
+            qDebug() << "MouseMoveOut " << item->id; \
+
+
+#define ITEM_EVENT_CLICK(pixmap_item) \
+    pixmap_item->MouseClick = [&](PixmapItem_t *item) { \
+            qDebug() << "MouseClick " << item->id << " == " << isMousePressed; \
+
+
+#define ITEM_EVENT_UPDATE(pixmap_item) \
+    pixmap_item->Update = [&](PixmapItem_t *item){ \
+
 typedef struct CompositePixmapItem {
     QPoint pos;
     QString id;
@@ -88,6 +107,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+    void TriggerMouseMoveEvent();
 
     // 边框拖拽功能
     void DragEvent(QMouseEvent *event);
@@ -127,7 +147,7 @@ protected:
     // 函数用于查找并删除 PixmapItem 元素
     void removePixmapItemById(const QString& id);
     void reArrangeCopyItems();
-
+    void clearCompositeItemTrash();
 
 
     // 剪切板功能
@@ -148,6 +168,7 @@ private:
 
     QVector<PixmapItem_t*> pixmapItemsTrash;
     QVector<CompositePixmapItem_t*> copyItemsTrash;
+    PixmapItem_t *CurPixmapItem{nullptr};
 
     const int PanelWidth{17};
     const int PanelHeight{30};

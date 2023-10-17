@@ -9,17 +9,20 @@ BasePanel::BasePanel(QWidget *parent)
     setMouseTracking(true);
 
     setFixedSize(tilePixel * PanelWidth, tilePixel * PanelHeight);
+    // 读取材质
     tiles = loadTileset(":/qss/ui/texture.png");
+    // 初始化 item 皮肤路径
     pixmapSkinInit();
-    // 检查字体是否可用
+    // 检查字体是否可用并加载
     fontId = QFontDatabase::addApplicationFont(":/qss/ui/ark-pixel-12px.ttf");
     if (fontId != -1) {
         fontName = QFontDatabase::applicationFontFamilies(fontId).at(0);
     }
-    QObject::connect(this, &BasePanel::itemDeleteSignal, this, &BasePanel::itemDeleteSlot);
 
+    // 初始化 item
     PixmapItemSet();
-//    createCopyItem();
+
+    //测试用例    createCopyItem();
 
 }
 
@@ -64,17 +67,19 @@ bool BasePanel::isChineseOrEnglishCharacter(const QChar &character) {
     }
 }
 
+// 每次重绘触发
 void BasePanel::drawPixmapPanel()
 {
     if(isMousePressed || initdown)
     {
         QPixmap pixmap(size());
         pixmap.fill(Qt::transparent);
-        // 使用 QPainter 将九张瓦片绘制到 QPixmap 上
+
         QPainter painter(&pixmap);
         // 绘制背景
         drawBackground(painter, QPoint(0,0), size());
-        // 绘制内部Item
+
+        // 绘制所有Item
         for (PixmapItem_t* tempItem : pixmapItems) {
             tempItem->Update(tempItem);
             setPixmapItem(painter, tempItem);
@@ -121,51 +126,68 @@ void BasePanel::mousePressEvent(QMouseEvent *event)
         isMousePressed = true;
         mousePressPos = event->pos();
         mousePressPos_global = event->globalPos();
-        if(event->pos().y() >=  dragY && event->pos().x() >= dragX)
-        {
-            isDrag = true;
-        }
+
+        // 窗口大小调整是否启用
+        isDrag = (event->pos().y() >=  dragY && event->pos().x() >= dragX);
+
+        // 是否在 Item 内部点击
         if(isMouseMoveIn)
         {
+            // 轮询找到被按下的item , 并调用 item 的 click 函数
             itemClickEvent();
         }
+
+
         itemTracking(event);
     }
 }
 
 void BasePanel::mouseMoveEvent(QMouseEvent *event)
 {
+    // 如果鼠标处于拖拽移动
     if (isMousePressed) {
+        //允许拖动改变窗口大小
         if(isDrag)
         {
+            // 根据鼠标移动改变窗口大小   会触发重绘事件
             DragEvent(event);
             // item状态更新
             itemsUpdate();
         }
     }
+
+    // 如果鼠标在可拖拽区域
     if(event->pos().y() >=  dragY && event->pos().x() >= dragX)
     {
         setCursor(Qt::SizeFDiagCursor);
     }else
     {
+    // 不在可拖拽区域
+        // 如果不在 item 内部
         if(!isMouseMoveIn)
         {
+            // 恢复成普通的鼠标状态
             setCursor(Qt::CustomCursor);
         }
+        // else 在 item 内部时， 由 item 自己处理
     }
+    // 保持 item 监听
     itemTracking(event);
 }
 
 void BasePanel::mouseReleaseEvent(QMouseEvent *event)
 {
+    // 鼠标左键松开
     if (event->button() == Qt::LeftButton) {
+        // 如果松开时 在item内部
         if (isMousePressed) {
-            update();
             isMousePressed = false;
-            if(isMouseMoveIn)
+            if(CurPixmapItem != nullptr)
             {
+                // 执行当前 item 的点击事件
                 itemClickEvent();
             }
+
         }
         itemTracking(event);
     }
@@ -185,12 +207,26 @@ void BasePanel::wheelEvent(QWheelEvent *event)
     }
 }
 
+void BasePanel::TriggerMouseMoveEvent()
+{
+
+//    QMouseEvent *event = new QMouseEvent(QEvent::MouseMove,
+//                                         QPointF(mousePressPos.x(), mousePressPos.y()),
+//                                         Qt::LeftButton,
+//                                         Qt::LeftButton,
+//                                         Qt::NoModifier);
+
+//    QApplication::postEvent(this, event);
+}
+
+// 窗口大小调整事件
 void BasePanel::DragEvent(QMouseEvent *event)
 {
 
     auto tmppos = event->pos() - mousePressPos;
     int newHeight = height() + tmppos.y();
     int newWidth = width() + tmppos.x();
+    // 最小值限定
     setFixedHeight(newHeight > 80? newHeight : 80);
     setFixedWidth(newWidth > 160? newWidth : 160);
     mousePressPos = event->pos();
@@ -316,20 +352,25 @@ void BasePanel::reDrawTextPixmap(PixmapItem_t *item, const QColor &fillColor, co
     item->res = pixmap;
 }
 
+// 界面功能按键 初始化
 void BasePanel::PixmapItemSet()
 {
-
+    // item生成按键
     PixmapItem_t *addBtn = createPixmapItemByUrl("ADD_BTN",QPoint(1*tilePixel, 1*tilePixel), btnSkinDict["ADD"][0], btnSkinDict["ADD"][1], btnSkinDict["ADD"][2]);
-    addBtn->MouseMoveIn = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveIn " << item->id;
+
+    // item 的事件函数绑定
+    ITEM_EVENT_MOVEIN(addBtn)
+    {
         setPixmapSkin(item, HoverSkin);
-    };
-    addBtn->MouseMoveOut = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveOut " << item->id;
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_MOVEOUT(addBtn)
+    {
         setPixmapSkin(item, NormalSkin);
-    };
-    addBtn->MouseClick = [&](PixmapItem_t *item) {
-        qDebug() << "MouseClick " << item->id << " == " << isMousePressed;
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_CLICK(addBtn)
+    {
         setPixmapSkin(item, isMousePressed ? ClickSkin : HoverSkin);
         if(isMousePressed){
 
@@ -339,69 +380,75 @@ void BasePanel::PixmapItemSet()
             const QString boardtext = getTextFromClipboard();
             if(boardtext != ""){
                 CompositePixmapItem_t *copyitem = createCompositeItem("index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel)), boardtext);
-
                 addItemToTrack(copyitem->btn);
                 addItemToTrack(copyitem->text);
-
                 copyItems.append(copyitem);
             }
         }
-
-
-    };
-    addBtn->Update = [&](PixmapItem_t *item){
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_UPDATE(addBtn)
+    {
         item->pos.setX(1*tilePixel);
         item->pos.setY(1*tilePixel);
-    };
-
+    }
+    ITEM_EVENT_END(addBtn)
+    // 追加 item 到监听列表
     addItemToTrack(addBtn);
     //====================================================================
     PixmapItem_t *CheckBox = createPixmapItemByUrl("CHECKBOX",QPoint(this->width() - tilePixel*3, 1*tilePixel), btnSkinDict["CHECKBOX"][0], btnSkinDict["CHECKBOX"][1],btnSkinDict["CHECKBOX"][2]);
-    CheckBox->MouseMoveIn = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveIn " << item->id;
+    ITEM_EVENT_MOVEIN(CheckBox)
+    {
         setPixmapSkin(item, HoverSkin);
         setCursor(Qt::PointingHandCursor);
-    };
-    CheckBox->MouseMoveOut = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveOut " << item->id;
+    }
+    ITEM_EVENT_END(CheckBox)
+    ITEM_EVENT_MOVEOUT(CheckBox)
+    {
         setPixmapSkin(item, NormalSkin);
-    };
-    CheckBox->MouseClick = [&](PixmapItem_t *item) {
-        qDebug() << "MouseClick " << item->id << " == " << isMousePressed;
+    }
+    ITEM_EVENT_END(CheckBox)
+    ITEM_EVENT_CLICK(CheckBox)
+    {
         setPixmapSkin(item, isMousePressed ? ClickSkin : HoverSkin);
-
         if(isMousePressed){
 
         }else{
 
         }
-    };
-    CheckBox->Update = [&](PixmapItem_t *item){
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_UPDATE(CheckBox)
+    {
         item->pos.setX(this->width() - tilePixel*3);
         item->pos.setY(1*tilePixel);
-    };
+    }
+    ITEM_EVENT_END(CheckBox)
     addItemToTrack(CheckBox);
 
     //====================================================================
     PixmapItem_t *CheckBoxLabel = createPixmapItemByText("CHECKBOXLABEL", QPoint(this->width() - tilePixel*(3 + 4.5), 1*tilePixel), "开机自启");
-    CheckBoxLabel->MouseMoveIn = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveIn " << item->id;
-    };
-    CheckBoxLabel->MouseMoveOut = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveOut " << item->id;
-    };
-    CheckBoxLabel->Update = [&](PixmapItem_t *item){
+    ITEM_EVENT_MOVEIN(CheckBoxLabel)
+    {
+
+    }
+    ITEM_EVENT_END(CheckBoxLabel)
+    ITEM_EVENT_MOVEOUT(CheckBoxLabel)
+    {
+
+    }
+    ITEM_EVENT_END(CheckBoxLabel)
+    ITEM_EVENT_CLICK(CheckBoxLabel)
+    {
+
+    }
+    ITEM_EVENT_END(CheckBoxLabel)
+    ITEM_EVENT_UPDATE(CheckBoxLabel)
+    {
         item->pos.setX(this->width() - tilePixel*(3 + 4.5));
         item->pos.setY(1*tilePixel);
-    };
-    CheckBoxLabel->MouseClick = [&](PixmapItem_t *item) {
-        qDebug() << "MouseClick " << item->id;
-        if(isMousePressed){
-
-        }else{
-
-        }
-    };
+    }
+    ITEM_EVENT_END(CheckBoxLabel)
     addItemToTrack(CheckBoxLabel);
     //=====================================================================
 
@@ -440,6 +487,7 @@ void BasePanel::setPixmapItem(QPainter &painter, PixmapItem_t *item)
 //    qDebug() << item->id << "  " << item->parentId << "  Pos : " << item->pos;
 }
 
+// 调用所有item的更新事件
 void BasePanel::itemsUpdate()
 {
     for (PixmapItem_t* tempItem : pixmapItems) {
@@ -447,9 +495,13 @@ void BasePanel::itemsUpdate()
     }
 }
 
+// 每次鼠标事件（按下、 抬起、 移动） 时触发
+// 原来找到鼠标是否在item内部
 void BasePanel::itemTracking(QMouseEvent *event)
 {
+
     for (PixmapItem_t* tempItem : pixmapItems) {
+
         auto point1 = event->pos();
         auto point2 = tempItem->pos;
         auto point3 = QPoint(tempItem->pos.x() + tempItem->res.width(), tempItem->pos.y() + tempItem->res.height());
@@ -459,22 +511,34 @@ void BasePanel::itemTracking(QMouseEvent *event)
         int minY = qMin(point2.y(), point3.y());
         int maxY = qMax(point2.y(), point3.y());
 
+        // 判断鼠标是否在 item 内部
         if (point1.x() >= minX && point1.x() <= maxX && point1.y() >= minY && point1.y() <= maxY) {
+        // 鼠标在 item 内部
+            // 一次只允许进入一个 item， 防止出现两个 item 重合的 bug
             if(!isMouseMoveIn)
             {
-                // point1 在矩形内
+                // 触发 item 的鼠标进入函数
                 itemMoveInEvent(tempItem);
+                // 状态位打开
                 isMouseMoveIn = true;
+                // 记录当前所在 item 的 id
                 itemID = tempItem->id;
             }
+            // 发现鼠标确实在 item 内部，可以直接 break 不用继续检查后面的 item
             break;
         } else {
+        // 鼠标移出 item
+            // 如果发现 鼠标是 movein 的状态， 并且 记录id 为当前的 item 的 id
+            // 说明鼠标是执行的移出操作
             if(itemID == tempItem->id && isMouseMoveIn)
             {
-                // point1 不在矩形内
+                // 清空 记录id
                 itemID = "NULL";
-                isMouseMoveIn = false;
+                // 触发 item 的鼠标移出函数
                 itemMoveOutEvent(tempItem);
+                // 状态位关闭
+                isMouseMoveIn = false;
+
             }
         }
     }
@@ -498,34 +562,28 @@ void BasePanel::addItemToTrack(PixmapItem_t *item)
 
 void BasePanel::itemMoveInEvent(PixmapItem_t *item)
 {
-    for (PixmapItem_t* tempItem : pixmapItems) {
-        if (tempItem->id == item->id) {
-            tempItem->MouseMoveIn(item);
-            break;
-        }
-    }
+    CurPixmapItem = item;
+    qDebug() << "CurItem : " << CurPixmapItem->id;
+    item->MouseMoveIn(item);
 }
 
 void BasePanel::itemMoveOutEvent(PixmapItem_t *item)
 {
-    for (PixmapItem_t* tempItem : pixmapItems) {
-        if (tempItem->id == item->id) {
-            tempItem->MouseMoveOut(item);
-            break;
-        }
-    }
+    item->MouseMoveOut(item);
+    CurPixmapItem = nullptr;
+    qDebug() << "CurItem clear";
 }
 
 void BasePanel::itemClickEvent()
 {
-    for (PixmapItem_t* tempItem : pixmapItems) {
-        if (tempItem->id == itemID) {
-            tempItem->MouseClick(tempItem);
-            break;
-        }
+    if(CurPixmapItem != nullptr)
+    {
+        CurPixmapItem->MouseClick(CurPixmapItem);
+        clearCompositeItemTrash();
     }
 }
 
+// 测试用例
 void BasePanel::createCopyItem()
 {
     int itemStartY = tilePixel + PanelSplitY;
@@ -539,9 +597,6 @@ void BasePanel::createCopyItem()
 
         copyItems.append(copyitem);
     }
-
-
-
 }
 
 CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint resPos, QString text)
@@ -553,56 +608,68 @@ CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint r
     //========== btn ============
     PixmapItem_t *addBtn = createPixmapItemByUrl(tempItem->id +"DELETE_BTN",QPoint(tempItem->pos.x() + 0*tilePixel, tempItem->pos.y() + 0*tilePixel), btnSkinDict["DELETE"][0], btnSkinDict["DELETE"][1], btnSkinDict["DELETE"][2], btnSkinDict["DEFAULT"][0]);
     addBtn->parentId = tempItem->id;
-    addBtn->MouseMoveIn = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveIn " << item->id;
+    ITEM_EVENT_MOVEIN(addBtn)
+    {
         setPixmapSkin(item, HoverSkin);
-    };
-    addBtn->MouseMoveOut = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveOut " << item->id;
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_MOVEOUT(addBtn)
+    {
         setPixmapSkin(item, NormalSkin);
-    };
-    addBtn->MouseClick = [&](PixmapItem_t *item) {
-        qDebug() << "MouseClick " << item->id << " == " << isMousePressed;
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_CLICK(addBtn)
+    {
         setPixmapSkin(item, isMousePressed ? ClickSkin : HoverSkin);
         if(isMousePressed){
 
         }else{
-            emit itemDeleteSignal(item->parentId);
+            deleteCopyItemByID(item->parentId);
+            //CurPixmapItem = nullptr;
+            qDebug() << "remove";
+            TriggerMouseMoveEvent();
         }
-    };
-    addBtn->Update = [&](PixmapItem_t *item){
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_UPDATE(addBtn)
+    {
         item->pos.setX(getCopyItemById(item->parentId)->pos.x() + 0*tilePixel);
         item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0*tilePixel);
-    };
+    }
+    ITEM_EVENT_END(addBtn)
     tempItem->btn = addBtn;
     //========== text ===========
     PixmapItem_t *BoxLabel = createPixmapItemByText(tempItem->id + "BOXLABEL", QPoint(tempItem->pos.x() + tilePixel * 2, tempItem->pos.y() + 0 * tilePixel), text);
     BoxLabel->parentId = tempItem->id;
     BoxLabel->text = text;
-    BoxLabel->MouseMoveIn = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveIn " << item->id;
-
+    ITEM_EVENT_MOVEIN(BoxLabel)
+    {
         reDrawTextPixmap(item, Qt::gray, item->text);
         setPixmapSkin(getCopyItemById(item->parentId)->btn, TempSkin);
-    };
-    BoxLabel->MouseMoveOut = [&](PixmapItem_t *item) {
-        qDebug() << "MouseMoveOut " << item->id;
-
+    }
+    ITEM_EVENT_END(BoxLabel)
+    ITEM_EVENT_MOVEOUT(BoxLabel)
+    {
         reDrawTextPixmap(item, Qt::transparent, item->text);
         setPixmapSkin(getCopyItemById(item->parentId)->btn, NormalSkin);
-    };
-    BoxLabel->Update = [&](PixmapItem_t *item){
-        item->pos.setX(getCopyItemById(item->parentId)->pos.x() + tilePixel * 2);
-        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0 * tilePixel);
-    };
-    BoxLabel->MouseClick = [&](PixmapItem_t *item) {
-        qDebug() << "MouseClick " << item->id;
+    }
+    ITEM_EVENT_END(BoxLabel)
+    ITEM_EVENT_CLICK(BoxLabel)
+    {
         if(isMousePressed){
 
         }else{
             QApplication::clipboard()->setText(item->text);
         }
-    };
+    }
+    ITEM_EVENT_END(BoxLabel)
+    ITEM_EVENT_UPDATE(BoxLabel)
+    {
+        item->pos.setX(getCopyItemById(item->parentId)->pos.x() + tilePixel * 2);
+        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0 * tilePixel);
+    }
+    ITEM_EVENT_END(BoxLabel)
+
     tempItem->text = BoxLabel;
 
     return tempItem;
@@ -651,7 +718,7 @@ void BasePanel::removeCompositeItemById(const QString &id) {
     }
 
     if (index >= 0) {
-        delete copyItems[index];
+        copyItemsTrash.append(copyItems[index]);
         copyItems.remove(index);
     }
 }
@@ -687,6 +754,15 @@ void BasePanel::reArrangeCopyItems()
     }
 
 
+}
+
+void BasePanel::clearCompositeItemTrash()
+{
+    for(int i=0; i < copyItemsTrash.length(); i++)
+    {
+        delete copyItemsTrash[i];
+    }
+    copyItemsTrash.clear();
 }
 
 const QString BasePanel::getTextFromClipboard()
