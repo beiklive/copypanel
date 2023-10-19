@@ -17,6 +17,7 @@
 #include <QMimeData>
 #include <QMap>
 #include <QStringList>
+#include "qtinformationstorage.h"
 enum TilesetIndex{
     TileTopLeft,
     TileTopCenter,
@@ -135,11 +136,9 @@ protected:
     void itemMoveOutEvent(PixmapItem_t *item);
     void itemClickEvent();
 
-
     // 复合pixItem
     void createCopyItem();
     CompositePixmapItem_t* createCompositeItem(QString itemName, QPoint resPos, QString text);
-
     CompositePixmapItem_t* getCopyItemById(QString id);
     void deleteCopyItemByID(QString id);
     // 函数用于查找并删除 CompositePixmapItem 元素
@@ -151,7 +150,12 @@ protected:
 
 
     // 剪切板功能
+    void ReadClipboardStorage();
+
+    void createClipboardItem(const QString boardtext);
+    void removeClipboardItem(PixmapItem_t *item);
     const QString getTextFromClipboard();
+    QTInformationStorage fileStorage;
 
 private:
     QMap<QString, QStringList> btnSkinDict;

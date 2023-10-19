@@ -1,7 +1,7 @@
 ﻿#include "qtinformationstorage.h"
 #include <QCoreApplication>
 QTInformationStorage::QTInformationStorage()
-    : filename_(QCoreApplication::applicationDirPath() + "/copypinner/copypinner.cache"), timestampFormat_("yyyy-MM-dd hh:mm:ss")
+    : filename_(QCoreApplication::applicationDirPath() + "/copypinner.cache"), timestampFormat_("yyyy-MM-dd hh:mm:ss")
 {
 }
 

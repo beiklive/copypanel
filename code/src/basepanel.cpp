@@ -23,7 +23,7 @@ BasePanel::BasePanel(QWidget *parent)
     PixmapItemSet();
 
     //测试用例    createCopyItem();
-
+    ReadClipboardStorage();
 }
 
 BasePanel::~BasePanel()
@@ -376,13 +376,11 @@ void BasePanel::PixmapItemSet()
 
         }else{
             // 鼠标抬起
-            int index = copyItems.length();
             const QString boardtext = getTextFromClipboard();
-            if(boardtext != ""){
-                CompositePixmapItem_t *copyitem = createCompositeItem("index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel)), boardtext);
-                addItemToTrack(copyitem->btn);
-                addItemToTrack(copyitem->text);
-                copyItems.append(copyitem);
+            createClipboardItem(boardtext);
+            if(boardtext != "")
+            {
+                fileStorage.add("text", boardtext);
             }
         }
     }
@@ -624,10 +622,7 @@ CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint r
         if(isMousePressed){
 
         }else{
-            deleteCopyItemByID(item->parentId);
-            //CurPixmapItem = nullptr;
-            qDebug() << "remove";
-            TriggerMouseMoveEvent();
+            removeClipboardItem(item);
         }
     }
     ITEM_EVENT_END(addBtn)
@@ -717,6 +712,8 @@ void BasePanel::removeCompositeItemById(const QString &id) {
         }
     }
 
+    fileStorage.removeAt(index);
+
     if (index >= 0) {
         copyItemsTrash.append(copyItems[index]);
         copyItems.remove(index);
@@ -763,6 +760,39 @@ void BasePanel::clearCompositeItemTrash()
         delete copyItemsTrash[i];
     }
     copyItemsTrash.clear();
+}
+
+void BasePanel::ReadClipboardStorage()
+{
+    int filesize = fileStorage.size();
+    if(filesize > 0)
+    {
+        for(int i = 0; i < filesize; i++)
+        {
+            createClipboardItem(fileStorage.getInfo(i));
+        }
+    }
+
+}
+
+void BasePanel::createClipboardItem(const QString boardtext)
+{
+    int index = copyItems.length();
+    if(boardtext != ""){
+        CompositePixmapItem_t *copyitem = createCompositeItem("index"+QString::number(index), QPoint(itemStartX + (0.5)*tilePixel, itemStartY + (index)*(tilePixel + 0.25*tilePixel)), boardtext);
+        addItemToTrack(copyitem->btn);
+        addItemToTrack(copyitem->text);
+        copyItems.append(copyitem);
+
+    }
+}
+
+void BasePanel::removeClipboardItem(PixmapItem_t *item)
+{
+    deleteCopyItemByID(item->parentId);
+    //CurPixmapItem = nullptr;
+    qDebug() << "remove";
+    TriggerMouseMoveEvent();
 }
 
 const QString BasePanel::getTextFromClipboard()
