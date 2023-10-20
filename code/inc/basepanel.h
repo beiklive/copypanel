@@ -17,6 +17,7 @@
 #include <QMimeData>
 #include <QMap>
 #include <QStringList>
+#include <QTimer>
 #include "qtinformationstorage.h"
 enum TilesetIndex{
     TileTopLeft,
@@ -47,6 +48,7 @@ typedef struct PixmapItem {
     QString hoverResUrl;
     QString clickResUrl;
     QString TempResUrl{"NULL"};
+    bool isOverArea{false};
     // MouseMoveIn Lambda函数
     std::function<void(PixmapItem*)> MouseMoveIn;
     // MouseMoveOut Lambda函数
@@ -55,6 +57,8 @@ typedef struct PixmapItem {
     std::function<void(PixmapItem*)> MouseClick;
     // Update Lambda函数
     std::function<void(PixmapItem*)> Update;
+
+    std::function<void(PixmapItem*, QString targetUrl)> PixmapAnimation;
 
 } PixmapItem_t;
 
@@ -76,6 +80,12 @@ typedef struct PixmapItem {
 
 #define ITEM_EVENT_UPDATE(pixmap_item) \
     pixmap_item->Update = [&](PixmapItem_t *item){ \
+
+
+#define ITEM_EVENT_ANIMATION(pixmap_item) \
+    pixmap_item->PixmapAnimation = [&](PixmapItem_t *item, QString targetUrl){ \
+
+
 
 typedef struct CompositePixmapItem {
     QPoint pos;
@@ -102,17 +112,21 @@ protected:
     // 鼠标相关
     bool isMouseMoveIn = false;
     bool isMousePressed{false};
+    bool isMouseSrollon{false};
     QPoint mousePressPos;
     QPoint mousePressPos_global;
+
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+    bool isInSrollArea(QMouseEvent *event);
+    bool isOverEdge(QPoint& t_point);
     void TriggerMouseMoveEvent();
 
     // 边框拖拽功能
     void DragEvent(QMouseEvent *event);
-    bool isOverEdge(QPoint& t_point);
+
     void DrawTailMapBorder(QPainter &painter, QPoint item_pos, QSize item_size);
 
     // pixmap皮肤初始化
@@ -122,6 +136,7 @@ protected:
     PixmapItem_t* createPixmapItemByUrl(QString itemName, QPoint resPos, QString resUrl, QString reshoverUrl, QString resclickUrl, QString resTempUrl="NULL");
     PixmapItem_t* createPixmapItemByText(QString itemName, QPoint resPos, QString resText, int fontSize=16);
     PixmapItem_t* createPixmapItemByPixmap(QString itemName, QPoint resPos);
+    PixmapItem_t* createScrollPixmapItem(QString itemName, QPoint resPos);
     void reDrawTextPixmap(PixmapItem_t *item, const QColor &fillColor, const QString& resText);
 
     void PixmapItemSet();
@@ -132,6 +147,7 @@ protected:
     void itemsUpdate();
     void itemTracking(QMouseEvent *event);
     void addItemToTrack(PixmapItem_t* item);
+    void addItemToSrollArea(PixmapItem_t* item);
     void itemMoveInEvent(PixmapItem_t *item);
     void itemMoveOutEvent(PixmapItem_t *item);
     void itemClickEvent();
@@ -159,8 +175,16 @@ protected:
 
 private:
     QMap<QString, QStringList> btnSkinDict;
+    QTimer timer;
+    // 定义过渡效果的参数
+    int transitionSteps = 30;  // 过渡步数
+    qreal transitionSpeed = 0.02; // 渐变速度
+
+    // 创建一个 QTimer 用于触发渐变效果
 
 
+    int currentStep = 0;
+    qreal currentOpacity = 0.0;
     QString fontName{"黑体"};
     QString itemID{"NULL"};
     int fontId{-1};
@@ -173,10 +197,12 @@ private:
     QVector<PixmapItem_t*> pixmapItemsTrash;
     QVector<CompositePixmapItem_t*> copyItemsTrash;
     PixmapItem_t *CurPixmapItem{nullptr};
+    PixmapItem_t *SrollArea{nullptr};
 
     const int PanelWidth{17};
     const int PanelHeight{30};
     const int tilePixel{16};
+    const int SrollPixel{10};
     const int PanelSplitY{16*3};
     const int zhPixel = 14;
     const int enPixel = 8;
@@ -187,6 +213,10 @@ private:
     int dragY{0};
     bool isDrag{false};
     bool initdown{true};
+    int SrollPixelTotal{0};
+
+    int ShowHeight{0};
+    int TotalHeight{0};
 signals:
     void itemDeleteSignal(const QString& text);
 public slots:

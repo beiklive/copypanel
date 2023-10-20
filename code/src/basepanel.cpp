@@ -84,7 +84,8 @@ void BasePanel::drawPixmapPanel()
             tempItem->Update(tempItem);
             setPixmapItem(painter, tempItem);
         }
-
+        TotalHeight = tilePixel * copyItems.length();
+        ShowHeight = height() - tilePixel * 5;
         // 绘制边框
         drawPanelBorder(painter);
 
@@ -101,6 +102,7 @@ void BasePanel::drawPanelBorder(QPainter &painter)
     DrawTailMapBorder(painter, QPoint(0,0), size());
     dragY = height() - tilePixel;
     dragX = width() - tilePixel;
+
 }
 
 void BasePanel::drawBackground(QPainter &painter, QPoint item_pos, QSize item_size)
@@ -146,6 +148,8 @@ void BasePanel::mouseMoveEvent(QMouseEvent *event)
 {
     // 如果鼠标处于拖拽移动
     if (isMousePressed) {
+        // 窗口大小调整是否启用
+        isDrag = !(event->pos().y() < 0 || event->pos().x() < 0);
         //允许拖动改变窗口大小
         if(isDrag)
         {
@@ -155,10 +159,11 @@ void BasePanel::mouseMoveEvent(QMouseEvent *event)
             itemsUpdate();
         }
     }
-
+    isMouseSrollon = isInSrollArea(event);
     // 如果鼠标在可拖拽区域
     if(event->pos().y() >=  dragY && event->pos().x() >= dragX)
     {
+        //qDebug() << event->pos().x() << " " << event->pos().y() << "setCursor(Qt::SizeFDiagCursor);" << dragX << " " << dragY;
         setCursor(Qt::SizeFDiagCursor);
     }else
     {
@@ -173,6 +178,8 @@ void BasePanel::mouseMoveEvent(QMouseEvent *event)
     }
     // 保持 item 监听
     itemTracking(event);
+
+
 }
 
 void BasePanel::mouseReleaseEvent(QMouseEvent *event)
@@ -195,28 +202,60 @@ void BasePanel::mouseReleaseEvent(QMouseEvent *event)
 
 void BasePanel::wheelEvent(QWheelEvent *event)
 {
-    if(event->angleDelta().y()>0)
+    if(isMouseSrollon)
     {
-        qDebug()<<"向前滚";
-        // 向上逻辑
+        if(event->angleDelta().y()>0)
+        {
+            qDebug()<<"向前滚";
+            if(SrollPixelTotal < 0)
+            {
+
+                {
+                    SrollPixelTotal += SrollPixel;
+                }
+                // 向上逻辑
+
+            }
+        }
+        else
+        {
+            qDebug()<<"向后滚";
+            // 向下逻辑
+
+            if(ShowHeight - SrollPixelTotal < TotalHeight )
+            {
+                SrollPixelTotal -= SrollPixel;
+            }
+        }
+
+
+
+        update();
     }
-    else
+}
+
+bool BasePanel::isInSrollArea(QMouseEvent *event)
+{
+    if((event->pos().x() > tilePixel) && (event->pos().y() > tilePixel * 4))
     {
-        qDebug()<<"向后滚";
-        // 向下逻辑
+        if((event->pos().x() < (width() - tilePixel)) && (event->pos().y() < (height() - tilePixel)))
+        {
+            return true;
+        }
     }
+
+    return false;
 }
 
 void BasePanel::TriggerMouseMoveEvent()
 {
 
-//    QMouseEvent *event = new QMouseEvent(QEvent::MouseMove,
-//                                         QPointF(mousePressPos.x(), mousePressPos.y()),
-//                                         Qt::LeftButton,
-//                                         Qt::LeftButton,
-//                                         Qt::NoModifier);
+    // 创建一个鼠标事件对象
+    QMouseEvent *event = new QMouseEvent(QEvent::MouseMove,mousePressPos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
 
-//    QApplication::postEvent(this, event);
+    // 模拟鼠标移动事件
+    QApplication::postEvent(this, event);
+    QApplication::sendPostedEvents(); // 处理事件队列中的事件
 }
 
 // 窗口大小调整事件
@@ -230,6 +269,8 @@ void BasePanel::DragEvent(QMouseEvent *event)
     setFixedHeight(newHeight > 80? newHeight : 80);
     setFixedWidth(newWidth > 160? newWidth : 160);
     mousePressPos = event->pos();
+
+    SrollPixelTotal += SrollPixelTotal < 0 ? tmppos.y() : 0;
 }
 
 bool BasePanel::isOverEdge(QPoint &t_point)
@@ -282,7 +323,6 @@ PixmapItem_t *BasePanel::createPixmapItemByUrl(QString itemName, QPoint resPos, 
     tempItem->TempResUrl  = resTempUrl;
     tempItem->pos.setX(resPos.x());
     tempItem->pos.setY(resPos.y());
-    setPixmapSkin(tempItem, NormalSkin);
 
     return tempItem;
 }
@@ -327,9 +367,65 @@ PixmapItem_t *BasePanel::createPixmapItemByPixmap(QString itemName, QPoint resPo
     return tempItem;
 }
 
+PixmapItem_t *BasePanel::createScrollPixmapItem(QString itemName, QPoint resPos)
+{
+    PixmapItem_t *tempItem = new PixmapItem_t();
+    tempItem->id = itemName;
+    tempItem->pos.setX(resPos.x());
+    tempItem->pos.setY(resPos.y());
+
+    QPixmap pixmap(width() - 2 * tilePixel, (height() - 160) > 0 ? (height() - 160) : 1);
+    pixmap.fill(Qt::transparent);
+
+
+    // item 的事件函数绑定
+    ITEM_EVENT_MOVEIN(tempItem)
+    {
+//        setPixmapSkin(item, HoverSkin);
+        isMouseSrollon = true;
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_MOVEOUT(tempItem)
+    {
+//        setPixmapSkin(item, NormalSkin);
+        isMouseSrollon = false;
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_CLICK(tempItem)
+    {
+
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_UPDATE(tempItem)
+    {
+//        item->pos.setX(1*tilePixel);
+//        item->pos.setY(3*tilePixel);
+    }
+    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_ANIMATION(tempItem)
+    {
+        QPixmap icon(targetUrl);
+        icon.setMask(icon.createHeuristicMask());  // 设置透明掩码
+        item->res = icon;
+    }
+    ITEM_EVENT_END(addBtn)
+//    setPixmapSkin(addBtn, NormalSkin);
+    // 追加 item 到监听列表
+//    addItemToTrack(addBtn);
+    return tempItem;
+}
+
 void BasePanel::reDrawTextPixmap(PixmapItem_t *item, const QColor &fillColor, const QString &resText)
 {
-    QPixmap pixmap(tilePixel * resText.length(), tilePixel);
+    item->text = resText;
+    int sizewidth{0};
+    for(int i = 0; i < resText.length(); i++)
+    {
+        QChar character = resText[i];
+        bool isChinese = isChineseOrEnglishCharacter(character);
+        sizewidth += (isChinese?zhPixel:enPixel);
+    }
+    QPixmap pixmap(sizewidth, tilePixel);
     pixmap.fill(fillColor);
     QPainter painter(&pixmap);
 
@@ -391,6 +487,14 @@ void BasePanel::PixmapItemSet()
         item->pos.setY(1*tilePixel);
     }
     ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_ANIMATION(addBtn)
+    {
+        QPixmap icon(targetUrl);
+        icon.setMask(icon.createHeuristicMask());  // 设置透明掩码
+        item->res = icon;
+    }
+    ITEM_EVENT_END(addBtn)
+    setPixmapSkin(addBtn, NormalSkin);
     // 追加 item 到监听列表
     addItemToTrack(addBtn);
     //====================================================================
@@ -415,13 +519,21 @@ void BasePanel::PixmapItemSet()
 
         }
     }
-    ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_END(CheckBox)
     ITEM_EVENT_UPDATE(CheckBox)
     {
         item->pos.setX(this->width() - tilePixel*3);
         item->pos.setY(1*tilePixel);
     }
     ITEM_EVENT_END(CheckBox)
+    ITEM_EVENT_ANIMATION(CheckBox)
+    {
+        QPixmap icon(targetUrl);
+        icon.setMask(icon.createHeuristicMask());  // 设置透明掩码
+        item->res = icon;
+    }
+    ITEM_EVENT_END(CheckBox)
+    setPixmapSkin(CheckBox, NormalSkin);
     addItemToTrack(CheckBox);
 
     //====================================================================
@@ -447,9 +559,14 @@ void BasePanel::PixmapItemSet()
         item->pos.setY(1*tilePixel);
     }
     ITEM_EVENT_END(CheckBoxLabel)
+    ITEM_EVENT_ANIMATION(CheckBoxLabel)
+    {
+
+    }
+    ITEM_EVENT_END(CheckBoxLabel)
     addItemToTrack(CheckBoxLabel);
     //=====================================================================
-
+//    SrollArea = createScrollPixmapItem("SROLLAREA", QPoint(tilePixel, tilePixel * 4));
 }
 
 void BasePanel::setPixmapSkin(PixmapItem_t *item, int skinflag)
@@ -473,15 +590,19 @@ void BasePanel::setPixmapSkin(PixmapItem_t *item, int skinflag)
         break;
     }
     qDebug() << item->id << " : " << skinUrl;
-    QPixmap icon(skinUrl);
-    icon.setMask(icon.createHeuristicMask());  // 设置透明掩码
-    item->res = icon;
+
+    item->PixmapAnimation(item, skinUrl);
+
+
     update();
 }
 
 void BasePanel::setPixmapItem(QPainter &painter, PixmapItem_t *item)
 {
-    painter.drawPixmap(item->pos.x(), item->pos.y(), item->res);
+    if(item->isOverArea == false)
+    {
+            painter.drawPixmap(item->pos.x(), item->pos.y(), item->res);
+    }
 //    qDebug() << item->id << "  " << item->parentId << "  Pos : " << item->pos;
 }
 
@@ -517,10 +638,13 @@ void BasePanel::itemTracking(QMouseEvent *event)
             {
                 // 触发 item 的鼠标进入函数
                 itemMoveInEvent(tempItem);
-                // 状态位打开
-                isMouseMoveIn = true;
-                // 记录当前所在 item 的 id
-                itemID = tempItem->id;
+                if(tempItem->id != "SROLLAREA")
+                {
+                    // 状态位打开
+                    isMouseMoveIn = true;
+                    // 记录当前所在 item 的 id
+                    itemID = tempItem->id;
+                }
             }
             // 发现鼠标确实在 item 内部，可以直接 break 不用继续检查后面的 item
             break;
@@ -556,6 +680,11 @@ void BasePanel::addItemToTrack(PixmapItem_t *item)
     if (!itemExists) {
         pixmapItems.append(item);
     }
+}
+
+void BasePanel::addItemToSrollArea(PixmapItem_t *item)
+{
+
 }
 
 void BasePanel::itemMoveInEvent(PixmapItem_t *item)
@@ -604,7 +733,7 @@ CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint r
     tempItem->pos.setX(resPos.x());
     tempItem->pos.setY(resPos.y());
     //========== btn ============
-    PixmapItem_t *addBtn = createPixmapItemByUrl(tempItem->id +"DELETE_BTN",QPoint(tempItem->pos.x() + 0*tilePixel, tempItem->pos.y() + 0*tilePixel), btnSkinDict["DELETE"][0], btnSkinDict["DELETE"][1], btnSkinDict["DELETE"][2], btnSkinDict["DEFAULT"][0]);
+    PixmapItem_t *addBtn = createPixmapItemByUrl(tempItem->id +"DELETE_BTN",QPoint(tempItem->pos.x() + 0*tilePixel, tempItem->pos.y() + 0*tilePixel + SrollPixelTotal), btnSkinDict["DELETE"][0], btnSkinDict["DELETE"][1], btnSkinDict["DELETE"][2], btnSkinDict["DEFAULT"][0]);
     addBtn->parentId = tempItem->id;
     ITEM_EVENT_MOVEIN(addBtn)
     {
@@ -629,12 +758,62 @@ CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint r
     ITEM_EVENT_UPDATE(addBtn)
     {
         item->pos.setX(getCopyItemById(item->parentId)->pos.x() + 0*tilePixel);
-        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0*tilePixel);
+        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0*tilePixel + SrollPixelTotal);
+        item->isOverArea = ((item->pos.y() < 4*tilePixel) || (item->pos.y() > (height() - tilePixel))) ? true : false;
     }
     ITEM_EVENT_END(addBtn)
+    ITEM_EVENT_ANIMATION(addBtn)
+    {
+        QPixmap icon(targetUrl);
+        icon.setMask(icon.createHeuristicMask());  // 设置透明掩码
+
+        if(item->res.isNull() || true)
+        {
+            item->res = icon;
+        }else
+        {
+
+//            timer.setInterval(100); // 每100毫秒触发一次
+//            QPixmap* tempicon = &item->res;
+//            qDebug() << "===============================";
+//            // 连接 QTimer 的 timeout 信号到槽函数
+
+//            QObject::connect(&timer, &QTimer::timeout, [&]() {
+////                qDebug() << item->id;
+//                qDebug() << "==============asdas=================";
+//                if (currentStep < transitionSteps) {
+//                    // 计算当前透明度
+//                    currentOpacity += transitionSpeed;
+
+//                    // 创建 QPainter 对象并绘制混合图像
+//                    QPainter painter(&item->res);
+//                    painter.setOpacity(currentOpacity);
+//                    painter.drawPixmap(0, 0, *tempicon);
+//                    painter.end();
+
+//                    ++currentStep;
+//                } else {
+//                    // 绘制目标图像，过渡结束
+//                    QPainter painter(&item->res);
+//                    painter.drawPixmap(0, 0, icon);
+//                    painter.end();
+//                    currentStep=0;
+//                    timer.stop(); // 停止定时器
+//                }
+//                update();
+//            });
+//            timer.start();
+        }
+
+
+
+//
+    }
+    ITEM_EVENT_END(addBtn)
+    setPixmapSkin(addBtn, NormalSkin);
     tempItem->btn = addBtn;
     //========== text ===========
-    PixmapItem_t *BoxLabel = createPixmapItemByText(tempItem->id + "BOXLABEL", QPoint(tempItem->pos.x() + tilePixel * 2, tempItem->pos.y() + 0 * tilePixel), text);
+    PixmapItem_t *BoxLabel = createPixmapItemByText(tempItem->id + "BOXLABEL", QPoint(tempItem->pos.x() + tilePixel * 2, tempItem->pos.y() + 0 * tilePixel + SrollPixelTotal), text);
     BoxLabel->parentId = tempItem->id;
     BoxLabel->text = text;
     ITEM_EVENT_MOVEIN(BoxLabel)
@@ -661,7 +840,13 @@ CompositePixmapItem_t *BasePanel::createCompositeItem(QString itemName, QPoint r
     ITEM_EVENT_UPDATE(BoxLabel)
     {
         item->pos.setX(getCopyItemById(item->parentId)->pos.x() + tilePixel * 2);
-        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0 * tilePixel);
+        item->pos.setY(getCopyItemById(item->parentId)->pos.y() + 0 * tilePixel + SrollPixelTotal);
+        item->isOverArea = ((item->pos.y() < 4*tilePixel) || (item->pos.y() > (height() - tilePixel))) ? true : false;
+    }
+    ITEM_EVENT_END(BoxLabel)
+    ITEM_EVENT_ANIMATION(BoxLabel)
+    {
+
     }
     ITEM_EVENT_END(BoxLabel)
 
@@ -718,6 +903,8 @@ void BasePanel::removeCompositeItemById(const QString &id) {
         copyItemsTrash.append(copyItems[index]);
         copyItems.remove(index);
     }
+    TotalHeight = tilePixel * copyItems.length();
+    ShowHeight = height() - tilePixel * 5;
 }
 
 void BasePanel::removePixmapItemById(const QString &id) {
@@ -750,7 +937,7 @@ void BasePanel::reArrangeCopyItems()
         copyItems[i]->text->id = copyItems[i]->id + "BOXLABEL";
     }
 
-
+    CurPixmapItem = nullptr;
 }
 
 void BasePanel::clearCompositeItemTrash()
@@ -783,7 +970,8 @@ void BasePanel::createClipboardItem(const QString boardtext)
         addItemToTrack(copyitem->btn);
         addItemToTrack(copyitem->text);
         copyItems.append(copyitem);
-
+        TotalHeight = tilePixel * copyItems.length();
+        ShowHeight = height() - tilePixel * 5;
     }
 }
 
